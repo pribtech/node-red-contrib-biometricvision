@@ -1,0 +1,52 @@
+<script type="text/x-red" data-help-name="Biometric Compare">
+    <p>Face Compare </p>
+</script>
+
+<script type="text/x-red" data-template-name="Biometric Compare">
+
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name </label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-user"><i class="icon-bookmark"></i> User</label>
+        <input type="text" id="node-input-user">
+    </div>
+    <div class="form-row">
+        <label for="node-input-password"><i class="icon-bookmark"></i> Password</label>
+       <input type="password" id="node-input-password">
+    </div>
+
+</script>
+
+<script type="text/javascript">
+  	const biometricCompareNodeName="Biometric Compare";
+    RED.nodes.registerType(biometricCompareNodeName,{
+    	category: 'function',
+        defaults: {
+            name: {value:"",required:false}
+        },
+        credentials: {
+            user: {type:'text'},
+            password: {type:'password'}
+        },
+	    inputs:1,
+        inputLabels: "Message",
+        outputs:3,
+        outputLabels: ["Match","MisMatch","Error"],
+        icon: "logo.svg",
+        label: function() {
+            return this.name||this._(biometricCompareNodeName);
+        },
+        labelStyle: function() {
+            return "node_label_italic";
+        },
+        oneditprepare: function() {
+        },
+        oneditsave: function() {
+        },
+        oneditresize: function(size) {
+        },
+    });
+</script>

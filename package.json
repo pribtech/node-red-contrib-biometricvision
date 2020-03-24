@@ -1,0 +1,46 @@
+{
+  "name": "node-red-contrib-biometricvision",
+  "version": "0.0.1",
+  "description": "Node-RED biometricvision",
+  "dependencies": {
+    "logger": "git+https://github.com/peterprib/node-red-contrib-logger.git"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-import": "^2.19.1",
+    "eslint-plugin-node": "^11.0.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "mocha":"*",
+    "node-red":"*",
+    "node-red-node-test-helper":"*"
+  },
+  "scripts": {
+    "test": "mocha \"test/**/*_spec.js\"",
+    "lint": "eslint --ext .js ./",
+    "lint-fix": "eslint --fix --ext .js ./"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pribtech/node-red-contrib-biometricvision.git"
+  },
+  "keywords": [
+    "node-red",
+    "image",
+    "facial",
+    "recognition",
+    "biometrics"
+  ],
+  "node-red": {
+    "nodes": {
+      "biometricCompare": "biometricvision/biometricCompare.js"
+    }
+  },
+  "author": "Peter Prib",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/peterprib/node-red-contrib-biometricvision/issues"
+  },
+  "homepage": "https://github.com/peterprib/node-red-contrib-biometricvision#readme"
+}
