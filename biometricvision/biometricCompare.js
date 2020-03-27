@@ -2,25 +2,29 @@ const Logger = require("node-red-contrib-logger");
 const logger = new Logger("biometricvision");
 logger.sendInfo("Copyright 2020 Jaroslav Peter Prib");
 
+const { Readable } = require('stream');
 
-//const stream = require('stream');
-//import { Readable } from 'stream';
+function imageStream(stream){
+	return {
+		value: stream,
+		options: {
+			contentType: 'image/jpeg'
+		}
+	};
+}
 
 function imageJPEG(data){
 	/*
-	 * new Readable({
-		                        read() {
-		                            this.push(buffer);
-		                          },
-		                        })
+	 * 
 	 */
 	if(data) {
-		const buffer = new Buffer(data, 'base64');
-		return {
-	  	  data: buffer,
-	  	  filename: 'image1.jpeg',
-	  	  mimetype: 'image/jpeg'
-	  	};
+		const readable = new Readable({read() {this.push(Buffer.from(data));}});  //???, 'base64'
+		return readable;
+//		return {
+//	  	  data: readable,  
+//	  	  filename: 'image1.jpeg',
+//	  	  mimetype: 'image/jpeg'
+//	  	};
 	} else return null;
 }
 
@@ -93,7 +97,8 @@ module.exports = function(RED) {
 			        headers: node.headers,
 			        followAllRedirects: true,
 			        json: true,
-			        formData: {image1:imageJPEG(msg.payload.image1),image2:imageJPEG(msg.payload.image1)}
+//			        formData:msg.payload
+			        formData: {image1:imageStream(msg.payload.image1),image2:imageStream(msg.payload.image1)}
 			    }, function(error, response, body) {
 			    	if(logger.active)  logger.send({label:"sendCompare response",response:response});  
 					try{
@@ -102,6 +107,11 @@ module.exports = function(RED) {
 						if(response.statusCode !== 200) throw Error(compareURL+' returns statusCode: '+response.statusCode);
 						msg.payload=body;
 					} catch(e){
+						if(response.statusCode == 408) {
+							node.warn("expired token getting new one");
+							node.getToken(msg);
+							return;
+						}
 						node.error(e);
 //						logger.send({label:"sendCompare response",response:response});
 						msg.payload=body;
@@ -126,10 +136,10 @@ module.exports = function(RED) {
         node.on("input", function(msg) {
  			if(!msg.payload) {
  				node.sendError(msg,'message missing payload');
-//        	} else if(!msg.payload.image1) {
-// 				node.sendError(msg,'message payload missing property image1');
-//        	} else if(!msg.payload.image2) {
-// 				node.sendError(msg,'message payload missing property image2');
+        	} else if(!msg.payload.image1) {
+ 				node.sendError(msg,'message payload missing property image1');
+        	} else if(!msg.payload.image2) {
+ 				node.sendError(msg,'message payload missing property image2');
         	} else {
     			if(logger.active) logger.send({label:"input passed tests"});
             	node.sendCompare(msg);
