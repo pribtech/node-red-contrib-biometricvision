@@ -12,22 +12,13 @@ function imageStream(stream){
 		}
 	};
 }
-
-function imageJPEG(data){
-	/*
-	 * 
-	 */
-	if(data) {
-		const readable = new Readable({read() {this.push(Buffer.from(data));}});  //???, 'base64'
-		return readable;
-//		return {
-//	  	  data: readable,  
-//	  	  filename: 'image1.jpeg',
-//	  	  mimetype: 'image/jpeg'
-//	  	};
-	} else return null;
+function imageBuffer2Stream(buffer){
+	const readable = new Readable({read() {this.push(buffer,'base64');}});  //???, 'base64'
+	return imageStream(readable);
 }
-
+function imageData2Stream(data){
+	return imageBuffer2Stream(Buffer.from(data));
+}
 const hostURL='https://bvengine.com',
 	compareURL=hostURL+'/api/compare',
 	tokenURL=hostURL+'/oauth/token',
@@ -36,7 +27,31 @@ const hostURL='https://bvengine.com',
 module.exports = function(RED) {
     function biometricCompareNode(config) {
         RED.nodes.createNode(this, config);
-        let node=Object.assign(this,config);
+        let node=Object.assign(this,config,{checkStakeFrequencySecs:60,imageCache:{},imageCacheRetentionSecs:3600});
+        node.imageCache={};
+        node.releaseStaleImages=function() {
+	    	if(logger.active) logger.send({label:"releaseStaleImages"});  
+        	const staleTimestamp= new Date(Date.now() - (node.imageCacheRetentionSecs * 1000));
+        	Object.keys(node.imageCache)
+        		.filter(id=>node.imageCache[id].lastTouched < staleTimestamp)
+        		.forEach(id=>{
+        	    	if(logger.active) logger.send({label:"releaseStaleImages delete",id:id});  
+        			delete node.imageCache[id];
+        		});
+       	};
+        node.cacheImage=function(id,image){
+	    	if(logger.active) logger.send({label:"cacheImage",id:id});  
+        	if(!image) throw Error("image not sent, id:"+id);
+        	node.imageCache[id]={image:image,lastTouched:new Date()};
+        };
+        node.getCacheImage=function(id){
+        	const image=node.imageCache[id];
+        	if(!image) throw Error("image not found in cache, id:"+id);
+        	if(!image.image) throw Error("image lost in cache, id:"+id);
+        	image.lastTouched=new Date();
+        	return image.image;
+        };
+        
         node.status({fill: "yellow", shape: "dot", text: "Awaiting request"});
         if(!node.credentials) {
         	node.status({fill: "red", shape: "dot", text: "No credentials"});
@@ -78,7 +93,7 @@ module.exports = function(RED) {
     					'X-API-KEY': '328a47240f46a0f20be631116ac56bd3',
     					"Content-Type": "application/json" 
 //   						'Content-Type': 'multipart/form-data'
-//							'Content-Type':     'application/x-www-form-urlencoded'
+//						'Content-Type':     'application/x-www-form-urlencoded'
    					};
 					if(logger.active) logger.send({label:"getToken ok",response:node.connection});
 	        		node.sendCompare(msg);
@@ -92,13 +107,15 @@ module.exports = function(RED) {
         		return;
 			}
 			try{
+				if(!msg.payload.image1) throw Error("missing image1");
+				if(!msg.payload.image2) throw Error("missing image2");
 				request.post({
 			        url: compareURL, 
 			        headers: node.headers,
 			        followAllRedirects: true,
 			        json: true,
-//			        formData:msg.payload
-			        formData: {image1:imageStream(msg.payload.image1),image2:imageStream(msg.payload.image1)}
+//			        form: {image1:imageData2Stream(msg.payload.image1),image2:imageData2Stream(msg.payload.image2)}
+					formData: {image1:imageData2Stream(msg.payload.image1),image2:imageData2Stream(msg.payload.image2)}
 			    }, function(error, response, body) {
 			    	if(logger.active)  logger.send({label:"sendCompare response",response:response});  
 					try{
@@ -134,6 +151,22 @@ module.exports = function(RED) {
                 node.send([null,null,msg]); 
 		};
         node.on("input", function(msg) {
+        	if(msg.topic) {
+		    	if(logger.active) logger.send({label:"input",topic:msg.topic});  
+        		const topicParts=msg.topic.split('/'),
+        			action=topicParts[0];
+        		switch(action){
+        			case "compare":
+        				msg.payload={image1:node.getCacheImage(topicParts[1]),image2:msg.payload};
+        				node.sendCompare(msg);
+        				return;
+        			case "cache":
+        				node.cacheImage(topicParts[1],msg.payload);
+        				return;
+        			default:
+        				break;
+        		}
+        	}
  			if(!msg.payload) {
  				node.sendError(msg,'message missing payload');
         	} else if(!msg.payload.image1) {
@@ -145,6 +178,11 @@ module.exports = function(RED) {
             	node.sendCompare(msg);
         	}
         });
+       	node.releaseStaleImagesProcess = setInterval(function(node) {node.releaseStaleImages.apply(node)}, 1000*(node.checkStakeFrequencySecs||60),node);
+       	node.on("close", function(removed,done) {
+            clearInterval(node.releaseStaleImagesProcess); 
+       		node.connectionPool.close(done);
+       	});
     } 
 
     RED.nodes.registerType("Biometric Compare", biometricCompareNode, {
