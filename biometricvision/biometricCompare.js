@@ -1,25 +1,27 @@
 const Logger = require("node-red-contrib-logger");
 const logger = new Logger("biometricvision");
 logger.sendInfo("Copyright 2020 Jaroslav Peter Prib");
-
+const fs=require('fs');
+const path=require('path');
 const { Readable } = require('stream');
-
-function imageStream(stream){
-	return {
-		value: stream,
-		options: {
-			contentType: 'image/jpeg'
-		}
-	};
+function objectType(value) {
+	if(value instanceof Buffer) return 'buffer';
+	if(value instanceof Readable) return 'stream';
+	if(value instanceof String) return 'string';
+	const regex = /^[object (S+?)]$/;
+	const matches = Object.prototype.toString.call(value).match(regex) || [];
+	return (matches[1] || 'undefined').toLowerCase();
 }
+
 function imageBuffer2Stream(buffer){
-	const readable = new Readable({read() {this.push(buffer,'base64');}});  //???, 'base64'
+	const readable = new Readable({read() {this.push(buffer);}});
 	return imageStream(readable);
 }
 function imageData2Stream(data){
 	return imageBuffer2Stream(Buffer.from(data));
 }
 const hostURL='https://bvengine.com',
+	compareAPI='/api/compare',
 	compareURL=hostURL+'/api/compare',
 	tokenURL=hostURL+'/oauth/token',
 	request=require('request');
@@ -29,6 +31,33 @@ module.exports = function(RED) {
         RED.nodes.createNode(this, config);
         let node=Object.assign(this,config,{checkStakeFrequencySecs:60,imageCache:{},imageCacheRetentionSecs:3600});
         node.imageCache={};
+    	node.saveImage=(()=>false);     		
+        if(node.directoryStore){
+        	fs.stat(node.directoryStore, function(err, stats) {
+        		try{
+        			if(err) throw Error(err);
+    	            if(!stats.isDirectory()) throw Error("not a directory");
+        		} catch(ex) {
+	    			logger.send({label:"directoryStore",error:ex.toString(),directory:node.directoryStore});
+	    			const error="directory store " +ex.toString();
+	        	    node.error(error);
+	        	    node.status({fill:"red",shape:"ring",text:error});
+	    			return;
+	    		}
+        		node.saveImage=function(id,data){
+        	        fs.writeFile(path.join(node.directoryStore,id+'.png'), data, 'binary', function(err){
+        	            if(err){
+        	    			logger.send({label:"directoryStore",error:ex.toString(),directory:node.directoryStore});
+        	    			const error="directory store " +ex.toString()
+        	        	    node.error(error);
+        	        	    node.status({fill:"red",shape:"ring",text:error});
+        	    			return;
+        	            }
+        	        })
+        		}
+				if(logger.active) logger.send({label:"directoryStore",directory:node.directoryStore});
+	        });
+        }
         node.releaseStaleImages=function() {
 	    	if(logger.active) logger.send({label:"releaseStaleImages"});  
         	const staleTimestamp= new Date(Date.now() - (node.imageCacheRetentionSecs * 1000));
@@ -38,6 +67,25 @@ module.exports = function(RED) {
         	    	if(logger.active) logger.send({label:"releaseStaleImages delete",id:id});  
         			delete node.imageCache[id];
         		});
+        };
+        node.checkStoredImage=function(id,msg){
+        	try{
+				msg.payload.image1=node.getCacheImage(id);
+				node.sendCompare(msg);
+        	} catch(ex){ // get from persisted
+        		fs.readFile(path.join(node.directoryStore,id+'.png'), function(err, data) {
+        			if(!node.imageCache[id]){  // now in cache, may have been saved
+        				if(err) {
+        					node.sendError(msg,"Reference image not found");
+        					if(logger.active) logger.send({label:"sendCompare request error",error:err});
+        					return;
+        				}
+               			node.cacheImage(id,data);
+       			 	}
+    				msg.payload.image1=node.getCacheImage(id);
+    				node.sendCompare(msg);
+        		});
+        	}
        	};
         node.cacheImage=function(id,image){
 	    	if(logger.active) logger.send({label:"cacheImage",id:id});  
@@ -73,7 +121,7 @@ module.exports = function(RED) {
 						"grant_type": "client_credentials"
 					}
 		    }, function(error, response, body) {
-		    	if(node.logResponse) logger.send({label:"gettoken reponse",response:response});
+		    	if(logger.active) logger.send({label:"gettoken reponse",response:response});
               	if (error) {
  					node.sendError(msg,error);
                 } else{
@@ -82,7 +130,7 @@ module.exports = function(RED) {
    						node.connection = body;
    					} catch(e){
    						node.error(e);
-   						logger.send({label:"sendCompare response",body:body});
+   						logger.send({label:"sendCompare response",response:response});
    						node.sendError(msg,"gettoken unexpected error, response object parsing error");
    	 					return;
    	 				}
@@ -90,10 +138,10 @@ module.exports = function(RED) {
 	        		msg.biometricvisionConnectTried=true;
 	        		node.headers = {
     					'Authorization':'Bearer '+node.connection.access_token,
-    					'X-API-KEY': '328a47240f46a0f20be631116ac56bd3',
-    					"Content-Type": "application/json" 
-//   						'Content-Type': 'multipart/form-data'
-//						'Content-Type':     'application/x-www-form-urlencoded'
+    					'X-Token': '328a47240f46a0f20be631116ac56bd3',
+    					"Content-Type": "application/json",
+//       					"Access-Control-Allow-Origin": "*",													//CORS
+//       					"Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept"	//CORS    					"Content-Type": "application/json" 
    					};
 					if(logger.active) logger.send({label:"getToken ok",response:node.connection});
 	        		node.sendCompare(msg);
@@ -109,38 +157,48 @@ module.exports = function(RED) {
 			try{
 				if(!msg.payload.image1) throw Error("missing image1");
 				if(!msg.payload.image2) throw Error("missing image2");
+				const image1=msg.payload.image1;
+				const image2=msg.payload.image2;
+				if(logger.active) logger.send({label:"image type",image1:objectType(image1),image2:objectType(image2)})
+				let form = {
+					image1:image1,	
+					image2:image2	
+				};
 				request.post({
 			        url: compareURL, 
 			        headers: node.headers,
 			        followAllRedirects: true,
 			        json: true,
-//			        form: {image1:imageData2Stream(msg.payload.image1),image2:imageData2Stream(msg.payload.image2)}
-					formData: {image1:imageData2Stream(msg.payload.image1),image2:imageData2Stream(msg.payload.image2)}
+			        formData:form
 			    }, function(error, response, body) {
 			    	if(logger.active)  logger.send({label:"sendCompare response",response:response});  
 					try{
 						if(error) throw Error(error);
 						if(!response) throw Error('no response');
 						if(response.statusCode !== 200) throw Error(compareURL+' returns statusCode: '+response.statusCode);
-						msg.payload=body;
-					} catch(e){
-						if(response.statusCode == 408) {
-							node.warn("expired token getting new one");
-							node.getToken(msg);
-							return;
+						msg.payload=response;
+					} catch(ex){
+						try{
+							if(response.statusCode && response.statusCode == 401) {
+								node.warn("expired token getting new one");
+								node.getToken(msg);
+								return;
+							}
+							node.error(ex);
+							msg.payload=response.body;
+							node.sendError(msg,"Unexpected error, response object parsing error");
+						} catch(e) {
+							logger.send({label:"sendCompare response catch error",exception:ex.toString(),error:error,response:response||"<null>"});
 						}
-						node.error(e);
-//						logger.send({label:"sendCompare response",response:response});
-						msg.payload=body;
-						node.sendError(msg,"Unexpected error, response object parsing error");
 						return;
 	   	 			}
-					node.send(msg);
+					body.Confidence=="Match"
+					node.send(body.Confidence=="Match"?msg:[null,msg]);
 			    });
-			} catch(e) {
-				node.error(e);
+			} catch(ex) {
+				node.error(ex);
 				node.sendError(msg,"Unexpected error, response object parsing error");
-				logger.send({label:"sendCompare request error",error:e});
+				logger.send({label:"sendCompare request error",error:ex});
 			}
 		};
 		this.sendError= function(msg,error) {
@@ -157,11 +215,23 @@ module.exports = function(RED) {
         			action=topicParts[0];
         		switch(action){
         			case "compare":
-        				msg.payload={image1:node.getCacheImage(topicParts[1]),image2:msg.payload};
-        				node.sendCompare(msg);
+        				const id=topicParts[1];
+        				msg.payload={image2:msg.payload};
+        				if(node.directoryStore){
+        					node.checkStoredImage(id,msg);
+        				} else {
+            				msg.payload.image1=node.getCacheImage(id);
+            				node.sendCompare(msg);
+        				}
         				return;
+        			case "save":
+        				node.saveImage(topicParts[1],msg.payload);
         			case "cache":
         				node.cacheImage(topicParts[1],msg.payload);
+        				return;
+        			case "flushCache":
+        				node.imageCache={};
+						node.log("cache cleared");
         				return;
         			default:
         				break;

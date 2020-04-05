@@ -17,6 +17,10 @@
         <label for="node-input-password"><i class="icon-bookmark"></i> Password</label>
        <input type="password" id="node-input-password">
     </div>
+    <div class="form-row">
+        <label for="node-input-directoryStore"><i class="icon-bookmark"></i>Store directory</label>
+       <input type="text" id="node-input-directoryStore">
+    </div>
 
 </script>
 
@@ -25,7 +29,8 @@
     RED.nodes.registerType(biometricCompareNodeName,{
     	category: 'function',
         defaults: {
-            name: {value:"",required:false}
+            name: {value:"",required:false},
+            directoryStore: {value:"",required:false}
         },
         credentials: {
             user: {type:'text'},
