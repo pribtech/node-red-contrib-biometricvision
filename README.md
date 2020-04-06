@@ -1,14 +1,14 @@
 # [node-red-contrib-biometricvision][2]
 
-[Node Red][1] node for easily identify or verify a person from a digital image 
+[Node Red][1] node for determining if a person matches between two digital images returning probability factors on key metrics,  
 
 ------------------------------------------------------------
 
 ## face compare
 
-Defines a face comparing node to [Biometric Vision][2]. 
+Defines a face comparing node to [Biometric Vision][2]. Can compare two images or store an image as a reference point. Images are cached for hour to minimise overhead on multi compares against single image.  
 
-![logger](documentation/node.JPG "node")
+![Compare](documentation/compare.JPG "Compare")
 
 ------------------------------------------------------------
 

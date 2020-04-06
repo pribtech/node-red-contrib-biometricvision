@@ -1,0 +1,304 @@
+[
+    {
+        "id": "b2547c5a.21ec6",
+        "type": "tab",
+        "label": "biometricvision",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "8f16417d.1ed1b",
+        "type": "debug",
+        "z": "b2547c5a.21ec6",
+        "name": "error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 930,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "c6280d4f.8e3a5",
+        "type": "debug",
+        "z": "b2547c5a.21ec6",
+        "name": "match",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 930,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "b3293093.832d6",
+        "type": "Biometric Compare",
+        "z": "b2547c5a.21ec6",
+        "name": "",
+        "directoryStore": "d:\\temp\\images",
+        "x": 670,
+        "y": 40,
+        "wires": [
+            [
+                "c6280d4f.8e3a5"
+            ],
+            [
+                "f1d877ca.2ba0f8"
+            ],
+            [
+                "8f16417d.1ed1b"
+            ]
+        ]
+    },
+    {
+        "id": "e0fc2791.608a88",
+        "type": "inject",
+        "z": "b2547c5a.21ec6",
+        "name": "not images",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 120,
+        "y": 20,
+        "wires": [
+            [
+                "b3293093.832d6"
+            ]
+        ]
+    },
+    {
+        "id": "9ca1054b.0cfbe8",
+        "type": "inject",
+        "z": "b2547c5a.21ec6",
+        "name": "image1 but no image 2",
+        "topic": "",
+        "payload": "{\"image1\":\"dummy\"}",
+        "payloadType": "json",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 160,
+        "y": 60,
+        "wires": [
+            [
+                "b3293093.832d6"
+            ]
+        ]
+    },
+    {
+        "id": "528cf222.64857c",
+        "type": "inject",
+        "z": "b2547c5a.21ec6",
+        "name": "image1, image 2 but crap images",
+        "topic": "",
+        "payload": "{\"image1\":\"dummy\",\"image2\":\"dummy\"}",
+        "payloadType": "json",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 190,
+        "y": 100,
+        "wires": [
+            [
+                "b3293093.832d6"
+            ]
+        ]
+    },
+    {
+        "id": "7595d000.db40b",
+        "type": "file in",
+        "z": "b2547c5a.21ec6",
+        "name": "",
+        "filename": "C:\\Users\\db2admin\\Pictures\\Camera Roll\\picture003.jpg",
+        "format": "stream",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "binary",
+        "x": 270,
+        "y": 200,
+        "wires": [
+            [
+                "32072e8c.cc43d2"
+            ]
+        ]
+    },
+    {
+        "id": "26de0f7.cf72cf",
+        "type": "inject",
+        "z": "b2547c5a.21ec6",
+        "name": "",
+        "topic": "same image",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 160,
+        "y": 140,
+        "wires": [
+            [
+                "7595d000.db40b"
+            ]
+        ]
+    },
+    {
+        "id": "32072e8c.cc43d2",
+        "type": "function",
+        "z": "b2547c5a.21ec6",
+        "name": "",
+        "func": "const image=msg.payload;\nmsg.payload={image1:image,image2:image};\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 490,
+        "y": 120,
+        "wires": [
+            [
+                "b3293093.832d6"
+            ]
+        ]
+    },
+    {
+        "id": "23842a3a.c49116",
+        "type": "inject",
+        "z": "b2547c5a.21ec6",
+        "name": "cache/baseimage",
+        "topic": "cache/baseimage",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 100,
+        "y": 320,
+        "wires": [
+            [
+                "e26ec86e.efb478"
+            ]
+        ]
+    },
+    {
+        "id": "e26ec86e.efb478",
+        "type": "file in",
+        "z": "b2547c5a.21ec6",
+        "name": "",
+        "filename": "\\Pictures\\picture001.jpg",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "binary",
+        "x": 450,
+        "y": 320,
+        "wires": [
+            [
+                "b3293093.832d6"
+            ]
+        ]
+    },
+    {
+        "id": "cfd22881.0863c8",
+        "type": "inject",
+        "z": "b2547c5a.21ec6",
+        "name": "compare/baseimage",
+        "topic": "compare/baseimage",
+        "payload": "",
+        "payloadType": "str",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 110,
+        "y": 380,
+        "wires": [
+            [
+                "1d0629bd.ad43d6"
+            ]
+        ]
+    },
+    {
+        "id": "1d0629bd.ad43d6",
+        "type": "file in",
+        "z": "b2547c5a.21ec6",
+        "name": "",
+        "filename"\\Pictures\\picture002.jpg",
+        "format": "",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "base64",
+        "x": 510,
+        "y": 380,
+        "wires": [
+            [
+                "b3293093.832d6"
+            ]
+        ]
+    },
+    {
+        "id": "f1d877ca.2ba0f8",
+        "type": "debug",
+        "z": "b2547c5a.21ec6",
+        "name": "unmatch",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 940,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "d763784e.fa91b8",
+        "type": "inject",
+        "z": "b2547c5a.21ec6",
+        "name": "flushCache",
+        "topic": "flushCache",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 420,
+        "y": 260,
+        "wires": [
+            [
+                "b3293093.832d6"
+            ]
+        ]
+    },
+    {
+        "id": "e89223b9.5a77",
+        "type": "inject",
+        "z": "b2547c5a.21ec6",
+        "name": "save/baseimage",
+        "topic": "save/baseimage",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 100,
+        "y": 280,
+        "wires": [
+            [
+                "e26ec86e.efb478"
+            ]
+        ]
+    }
+]

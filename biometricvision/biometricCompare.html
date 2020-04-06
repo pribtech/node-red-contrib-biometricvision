@@ -1,9 +1,14 @@
 <script type="text/x-red" data-help-name="Biometric Compare">
     <p>Face Compare with response on match or unmatch. </p>
+    <p>See <a href="https://biometricvision.com">biometricvision.com</a> for user, password and X-Token.</p>
+    <p>Detail store directory if the image is to persisted with save</p>
     <h1>Topic</h1>
     <dl>
-    <dt>saCache</dt><dd>Clear the cance</dd>
-    <dt>clearCache</dt><dd>Clear the cance</dd>
+    <dt>cache/&lt;identifier&gt;</dt><dd>Put image in payload into cache</dd>
+    <dt>compare/&lt;identifier&gt;</dt><dd>Compare image payload with image associated with identifer</dd>
+    <dt>save/&lt;identifier&gt;</dt><dd>Put image in payload into cache and persist file system</dd>
+    <dt>clearCache</dt><dd>Clear the cache</dd>
+    <dt>...</dt><dd>Compare payload.image1 to payload.image2</dd>
     </dl>
 </script>
 
@@ -19,8 +24,12 @@
         <input type="text" id="node-input-user">
     </div>
     <div class="form-row">
-        <label for="node-input-password"><i class="icon-bookmark"></i> Password</label>
-       <input type="password" id="node-input-password">
+		<label for="node-input-password"><i class="icon-bookmark"></i> Password</label>
+		<input type="password" id="node-input-password">
+    </div>
+    <div class="form-row">
+        <label for="node-input-xtoken"><i class="icon-bookmark"></i> X-Token</label>
+        <input type="text" id="node-input-xtoken">
     </div>
     <div class="form-row">
         <label for="node-input-directoryStore"><i class="icon-bookmark"></i>Store directory</label>
@@ -39,7 +48,8 @@
         },
         credentials: {
             user: {type:'text'},
-            password: {type:'password'}
+            password: {type:'password'},
+            xtoken: {type:'text'}
         },
 	    inputs:1,
         inputLabels: "Message",

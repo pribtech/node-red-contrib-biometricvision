@@ -30,6 +30,21 @@ module.exports = function(RED) {
     function biometricCompareNode(config) {
         RED.nodes.createNode(this, config);
         let node=Object.assign(this,config,{checkStakeFrequencySecs:60,imageCache:{},imageCacheRetentionSecs:3600});
+        if(!node.credentials.user) {
+    	    node.error("user not specified");
+    	    node.status({fill:"red",shape:"ring",text:"user not specified"});
+        	return;
+        }
+        if(!node.credentials.password) {
+    	    node.error("password not specified");
+    	    node.status({fill:"red",shape:"ring",text:"password not specified"});
+        	return;
+        }
+        if(!node.credentials.xtoken) {
+    	    node.error("x-Token not specified");
+    	    node.status({fill:"red",shape:"ring",text:"x-Token not specified"});
+        	return;
+        }
         node.imageCache={};
     	node.saveImage=(()=>false);     		
         if(node.directoryStore){
@@ -138,10 +153,8 @@ module.exports = function(RED) {
 	        		msg.biometricvisionConnectTried=true;
 	        		node.headers = {
     					'Authorization':'Bearer '+node.connection.access_token,
-    					'X-Token': '328a47240f46a0f20be631116ac56bd3',
+    					'X-Token': node.credentials.xtoken,
     					"Content-Type": "application/json",
-//       					"Access-Control-Allow-Origin": "*",													//CORS
-//       					"Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept"	//CORS    					"Content-Type": "application/json" 
    					};
 					if(logger.active) logger.send({label:"getToken ok",response:node.connection});
 	        		node.sendCompare(msg);
@@ -262,7 +275,10 @@ module.exports = function(RED) {
             },
             password: {
                 type: "password"
-            }
+            },
+            xtoken: {
+                type: "text"
+            },
         }
     });
 
