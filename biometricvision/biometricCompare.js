@@ -30,21 +30,6 @@ module.exports = function(RED) {
     function biometricCompareNode(config) {
         RED.nodes.createNode(this, config);
         let node=Object.assign(this,config,{checkStakeFrequencySecs:60,imageCache:{},imageCacheRetentionSecs:3600});
-        if(!node.credentials.user) {
-    	    node.error("user not specified");
-    	    node.status({fill:"red",shape:"ring",text:"user not specified"});
-        	return;
-        }
-        if(!node.credentials.password) {
-    	    node.error("password not specified");
-    	    node.status({fill:"red",shape:"ring",text:"password not specified"});
-        	return;
-        }
-        if(!node.credentials.xtoken) {
-    	    node.error("x-Token not specified");
-    	    node.status({fill:"red",shape:"ring",text:"x-Token not specified"});
-        	return;
-        }
         node.imageCache={};
     	node.saveImage=(()=>false);     		
         if(node.directoryStore){
@@ -122,11 +107,16 @@ module.exports = function(RED) {
         }
 //		node.reqTimeout = parseInt(RED.settings.httpRequestTimeout || 60000);
 		node.getToken= function (msg) {
-			if(msg.biometricvisionConnectTried) {
- 				node.sendError(msg,"get token has be tried,in loop");
- 				return;
+			try{
+				if(msg.biometricvisionConnectTried) throw Error("get token has been tried,in loop");
+				if(logger.active) logger.send({label:"getToken",user:node.credentials.user});
+		        if(!node.credentials.user)  throw Error("user not specified");
+		        if(!node.credentials.password)  throw Error("password not specified");
+		        if(!node.credentials.xtoken)  throw Error("x-Token not specified");
+			} catch(ex) {
+ 				node.sendError(msg,ex.toString());
+	        	return;
 			}
-			if(logger.active) logger.send({label:"getToken",user:node.user});
 			request.post({
 		        url: tokenURL, 
 		        json: true,
@@ -177,6 +167,7 @@ module.exports = function(RED) {
 					image1:image1,	
 					image2:image2	
 				};
+				msg.requestTS={before:new Date()};
 				request.post({
 			        url: compareURL, 
 			        headers: node.headers,
@@ -186,10 +177,12 @@ module.exports = function(RED) {
 			    }, function(error, response, body) {
 			    	if(logger.active)  logger.send({label:"sendCompare response",response:response});  
 					try{
+						msg.requestTS.after=new Date();
+						msg.requestTS.elapse=msg.requestTS.after-msg.requestTS.before;
 						if(error) throw Error(error);
 						if(!response) throw Error('no response');
 						if(response.statusCode !== 200) throw Error(compareURL+' returns statusCode: '+response.statusCode);
-						msg.payload=response;
+						msg.payload=body;
 					} catch(ex){
 						try{
 							if(response.statusCode && response.statusCode == 401) {
