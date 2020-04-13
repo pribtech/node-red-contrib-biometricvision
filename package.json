@@ -6,9 +6,8 @@
     "logger": "git+https://github.com/peterprib/node-red-contrib-logger.git",
     "fs":"*",
     "path":"*",
-    "path":"*",
     "stream","*",
-    "request"
+    "request","*"
   },
   "devDependencies": {
     "eslint": "^6.8.0",
