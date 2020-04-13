@@ -3,7 +3,12 @@
   "version": "0.0.1",
   "description": "Node-RED biometricvision",
   "dependencies": {
-    "logger": "git+https://github.com/peterprib/node-red-contrib-logger.git"
+    "logger": "git+https://github.com/peterprib/node-red-contrib-logger.git",
+    "fs":"*",
+    "path":"*",
+    "path":"*",
+    "stream","*",
+    "request"
   },
   "devDependencies": {
     "eslint": "^6.8.0",
