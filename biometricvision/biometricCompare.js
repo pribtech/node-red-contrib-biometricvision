@@ -2,9 +2,7 @@ const Logger = require("node-red-contrib-logger");
 const logger = new Logger("biometricvision");
 logger.sendInfo("Copyright 2020 Jaroslav Peter Prib");
 
-const fs=require('fs'),
-	path=require('path'),
-	{Readable}=require('stream');
+/*
 function objectType(value) {
 	if(value instanceof Buffer) return 'buffer';
 	if(value instanceof Readable) return 'stream';
@@ -13,6 +11,7 @@ function objectType(value) {
 	const matches = Object.prototype.toString.call(value).match(regex) || [];
 	return (matches[1] || 'undefined').toLowerCase();
 }
+*/
 function image2Stream(name,buffer){
 	return {
          value: buffer, 
@@ -32,6 +31,9 @@ module.exports = function(RED) {
         node.imageCache={};
     	node.saveImage=(()=>false);     		
         if(node.directoryStore){
+        	const fs=require('fs'),
+        		path=require('path'),
+        		{Readable}=require('stream');
         	fs.stat(node.directoryStore, function(err, stats) {
         		try{
         			if(err) throw Error(err);
@@ -108,6 +110,7 @@ module.exports = function(RED) {
 		node.getToken= function (msg,credentials=node.credentials,callback) {
 			try{
 				if(msg.biometricvisionConnectTried) throw Error("get token has been tried,in loop");
+				msg.biometricvisionConnectTried=true;
 				if(logger.active) logger.send({label:"getToken",user:credentials.user});
 		        if(!credentials.user)  throw Error("user not specified");
 		        if(!credentials.password)  throw Error("password not specified");
@@ -143,7 +146,6 @@ module.exports = function(RED) {
    	 					return;
    	 				}
 	        		node.status({fill: "green", shape: "dot"});
-	        		msg.biometricvisionConnectTried=true;
 	        		node.headers = {
     					'Authorization':'Bearer '+credentials.connection.access_token,
     					'X-Token': node.credentials.xtoken,
@@ -166,11 +168,12 @@ module.exports = function(RED) {
 				if(!msg.payload.image2) throw Error("missing image2");
 				const image1=msg.payload.image1;
 				const image2=msg.payload.image2;
-				if(logger.active) logger.send({label:"image type",image1:objectType(image1),image2:objectType(image2)})
+//				if(logger.active) logger.send({label:"image type",image1:objectType(image1),image2:objectType(image2)})
 				let form = {
 					image1:image2Stream('image1.jpg',image1),	
 					image2:image2Stream('image1.jpg',image2)	
 				};
+				if(logger.active) logger.send({label:"request to bio"});
 				msg.requestTS={before:new Date()};
 				request.post({
 			        url: compareURL, 
@@ -206,9 +209,9 @@ module.exports = function(RED) {
 					node.send(body.Confidence=="Match"?msg:[null,msg]);
 			    });
 			} catch(ex) {
+				logger.send({label:"sendCompare request error",error:ex.message});
 				node.error(ex);
 				node.sendError(msg,"Unexpected error, response object parsing error");
-				logger.send({label:"sendCompare request error",error:ex});
 			}
 		};
 		this.sendError=function(msg,error) {
