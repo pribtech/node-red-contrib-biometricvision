@@ -6,7 +6,19 @@
 
 ## face compare
 
-Defines a face comparing node to [Biometric Vision][2]. Can compare two images or store an image as a reference point. Images are cached for hour to minimise overhead on multi compares against single image.  
+Defines a face comparing node to [Biometric Vision][2]. Can compare two images or store an image as a reference point. Images are cached for hour to minimise overhead on multi compares against single image.  Auto resize of images to below 1 MB if image too large for Biometric call.
+
+Topics can be set to control
+
+** Cache/<identifier> ** Put image in payload into cache
+
+** compare/<identifier> ** Compare image payload with image associated with identifier
+
+** save/<identifier> ** Put image in payload into cache and persist file system
+
+** clearCache ** Clear the cache
+
+otherwise compares payload.image1 to payload.image2
 
 ![Compare](documentation/compare.JPG "Compare")
 

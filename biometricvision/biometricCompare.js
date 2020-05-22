@@ -12,6 +12,7 @@ function objectType(value) {
 	return (matches[1] || 'undefined').toLowerCase();
 }
 */
+
 function image2Stream(name,buffer){
 	return {
          value: buffer, 
@@ -22,7 +23,10 @@ const hostURL='https://bvengine.com',
 	compareAPI='/api/compare',
 	compareURL=hostURL+'/api/compare',
 	tokenURL=hostURL+'/oauth/token',
-	request=require('request');
+	maxImageSize=1000000,
+	cachemaxImageSize=1000000,
+	request=require('request'),
+	Jimp=require('jimp');
 
 module.exports = function(RED) {
     function biometricCompareNode(config) {
@@ -31,10 +35,10 @@ module.exports = function(RED) {
         node.imageCache={};
     	node.saveImage=(()=>false);     		
         if(node.directoryStore){
-        	const fs=require('fs'),
-        		path=require('path'),
-        		{Readable}=require('stream');
-        	fs.stat(node.directoryStore, function(err, stats) {
+        	node.fs=require('fs'),
+        	node.path=require('path'),
+        	//const	{Readable}=require('stream');
+        	node.fs.stat(node.directoryStore, function(err, stats) {
         		try{
         			if(err) throw Error(err);
     	            if(!stats.isDirectory()) throw Error("not a directory");
@@ -46,7 +50,7 @@ module.exports = function(RED) {
 	    			return;
 	    		}
         		node.saveImage=function(id,data){
-        	        fs.writeFile(path.join(node.directoryStore,id+'.png'), data, 'binary', function(err){
+        	        node.fs.writeFile(node.path.join(node.directoryStore,id+'.jpg'), data, 'binary', function(err){
         	            if(err){
         	    			logger.send({label:"directoryStore",error:ex.toString(),directory:node.directoryStore});
         	    			const error="directory store " +ex.toString()
@@ -74,7 +78,7 @@ module.exports = function(RED) {
 				msg.payload.image1=node.getCacheImage(id);
 				node.sendCompare(msg);
         	} catch(ex){ // get from persisted
-        		fs.readFile(path.join(node.directoryStore,id+'.png'), function(err, data) {
+        		node.fs.readFile(node.path.join(node.directoryStore,id+'.jpg'), function(err, data) {
         			if(!node.imageCache[id]){  // now in cache, may have been saved
         				if(err) {
         					node.sendError(msg,"Reference image not found");
@@ -109,7 +113,10 @@ module.exports = function(RED) {
 //		node.reqTimeout = parseInt(RED.settings.httpRequestTimeout || 60000);
 		node.getToken= function (msg,credentials=node.credentials,callback) {
 			try{
-				if(msg.biometricvisionConnectTried) throw Error("get token has been tried,in loop");
+				if(msg.biometricvisionConnectTried) {
+					logger.send({label:"getToken loop",headers:node.headers});
+					throw Error("get token has been tried,in loop");
+				}
 				msg.biometricvisionConnectTried=true;
 				if(logger.active) logger.send({label:"getToken",user:credentials.user});
 		        if(!credentials.user)  throw Error("user not specified");
@@ -159,15 +166,19 @@ module.exports = function(RED) {
 		node.sendCompare=function (msg) {
 			const credentials=node.credentials;
 			if(logger.active) logger.send({label:"sendCompare"});
-			if(!node.connection){
+			if(!credentials){
+				if(logger.active) logger.send({label:"sendCompare no credientals so get token"});
         		node.getToken(msg);
         		return;
 			}
 			try{
-				if(!msg.payload.image1) throw Error("missing image1");
-				if(!msg.payload.image2) throw Error("missing image2");
-				const image1=msg.payload.image1;
-				const image2=msg.payload.image2;
+				const image1=msg.image1||msg.payload.image1||null;
+				const image2=msg.image2||msg.payload.image2||msg.payload||null;
+				if(!image1) throw Error("missing image1");
+				if(!image2) throw Error("missing image2");
+				if(!(image1 instanceof Buffer)) throw Error("image1 is not a buffer stream");
+				if(!(image2 instanceof Buffer)) throw Error("image2 is not a buffer stream");
+
 //				if(logger.active) logger.send({label:"image type",image1:objectType(image1),image2:objectType(image2)})
 				let form = {
 					image1:image2Stream('image1.jpg',image1),	
@@ -181,15 +192,30 @@ module.exports = function(RED) {
 			        followAllRedirects: true,
 			        json: true,
 			        formData:form
-			    }, function(error, response, body) {
-			    	if(logger.active)  logger.send({label:"sendCompare response",response:response});  
+			    }, function(error, response) {
+			    	if(logger.active) logger.send({label:"sendCompare response",response:response});  
 					try{
 						msg.requestTS.after=new Date();
 						msg.requestTS.elapse=msg.requestTS.after-msg.requestTS.before;
 						if(error) throw Error(error);
 						if(!response) throw Error('no response');
+						if(response.statusCode == 413) throw Error("images size combined images too large");
 						if(response.statusCode !== 200) throw Error(compareURL+' returns statusCode: '+response.statusCode);
-						msg.payload=body;
+						const body=response.body;
+						if(body.status && body.status=="error") throw Error(body.message);
+						msg.payload={
+						    match: msg.payload.Confidence=="Match",
+						    features:{
+						        brow:{left:parseFloat(body["Left Brow"]),     right:parseFloat(body["Right Brow"])},
+						        cheek:{left:parseFloat(body["Left Cheek"]),   right:parseFloat(body["Right Cheek"])},  
+						        eye:{left:parseFloat(body["Left Eye"]),       right:parseFloat(body["Right Eye"])},  
+						        forehead:{base:parseFloat(body.Forehead),     middle:parseFloat(body["Middle Forehead"])},
+						        nose:parseFloat(body.Nose),
+						        mouth:parseFloat(body.Mouth),
+						        philtrum:parseFloat(body.Philtrum),
+						        jaw:parseFloat(body.Jaw)
+						    }
+						};
 					} catch(ex){
 						try{
 							if(response.statusCode && response.statusCode == 401) {
@@ -199,27 +225,54 @@ module.exports = function(RED) {
 							}
 							node.error(ex);
 							msg.payload=response.body;
-							node.sendError(msg,"Unexpected error, response object parsing error");
+							node.sendError(msg,"Unexpected error, response object parsing error "+ex.message);
 						} catch(e) {
 							logger.send({label:"sendCompare response catch error",exception:ex.toString(),error:error,response:response||"<null>"});
 						}
 						return;
 	   	 			}
-					body.Confidence=="Match"
-					node.send(body.Confidence=="Match"?msg:[null,msg]);
+					node.send(msg.payload?msg:[null,msg]);
 			    });
 			} catch(ex) {
-				logger.send({label:"sendCompare request error",error:ex.message});
+				logger.send({label:"sendCompare request error",error:ex.message,stack:ex.stack});
 				node.error(ex);
 				node.sendError(msg,"Unexpected error, response object parsing error");
 			}
 		};
-		this.sendError=function(msg,error) {
+		node.sendOk=function(msg,message) {
+			node.status({fill: "green",shape: "ring",text: message});
+            msg.statusCode=200;
+            node.send([null,null,msg]); 
+		};
+		node.sendError=function(msg,error) {
 				node.status({fill: "red",shape: "ring",text: error});
 				node.warn(RED._("Error: "+error));
                 msg.error=error;
                 msg.statusCode=400;
-                node.send([null,null,msg]); 
+                node.send([null,null,null,msg]); 
+		};
+		node.sizeImage=function(msg,imageBuffer,callBack){
+			const factor=maxImageSize/imageBuffer.length;
+			if(factor>1){
+				callBack(msg,imageBuffer);
+				return;
+			}
+			if(logger.active) logger.send({label:"sizeImage resize",factor:factor,size:imageBuffer.length});
+			Jimp.read(imageBuffer, (err, image)=>{
+				try{
+					if(err) throw Error(err);
+					image.scale(factor).getBuffer(Jimp.MIME_JPEG, (err,resizedImage)=>{
+						try{
+							if(err) throw Error(err);
+							callBack(msg,resizedImage);
+						} catch(ex) {
+							node.sendError(msg,'image resize error on scale '+ex.message);
+						}
+					});
+				} catch(ex) {
+					node.sendError(msg,'image resize error on read '+ex.message);
+				}
+			});
 		};
         node.on("input", function(msg) {
         	if(msg.topic) {
@@ -229,43 +282,49 @@ module.exports = function(RED) {
         		switch(action){
         			case "compare":
         				const id=topicParts[1];
-        				msg.payload={image2:msg.payload};
-        				if(node.directoryStore){
-        					node.checkStoredImage(id,msg);
-        				} else {
-            				msg.payload.image1=node.getCacheImage(id);
-            				node.sendCompare(msg);
-        				}
+        				node.sizeImage(msg,msg.payload,(msg,image)=>{
+            				msg.payload={image2:image};
+            				if(node.directoryStore){
+            					node.checkStoredImage(id,msg);
+            				} else {
+                				msg.payload.image1=node.getCacheImage(id);
+                				node.sendCompare(msg);
+            				}
+        				});
         				return;
         			case "getCredentials":
         				node.getToken(msg,msg.payload,(credentials));
+        				node.sendOk(msg,"OK");
         				return;
         			case "setCredentials":
-        				node.credentials=msg.payload;
+           			 	node.credentials=msg.payload;
+           				node.sendOk(msg,"OK");
         				return;
         			case "save":
-        				node.saveImage(topicParts[1],msg.payload);
         			case "cache":
-        				node.cacheImage(topicParts[1],msg.payload);
+        				node.sizeImage(msg,msg.payload,(msg,image)=>{
+            				if(action=="save") node.saveImage(topicParts[1],image);
+            				node.cacheImage(topicParts[1],image);
+        				});
+           				node.sendOk(msg,"OK");
         				return;
         			case "flushCache":
         				node.imageCache={};
 						node.log("cache cleared");
+           				node.sendOk(msg,"cache cleared");
         				return;
         			default:
         				break;
         		}
         	}
- 			if(!msg.payload) {
- 				node.sendError(msg,'message missing payload');
-        	} else if(!msg.payload.image1) {
- 				node.sendError(msg,'message payload missing property image1');
-        	} else if(!msg.payload.image2) {
- 				node.sendError(msg,'message payload missing property image2');
-        	} else {
-    			if(logger.active) logger.send({label:"input passed tests"});
-            	node.sendCompare(msg);
-        	}
+   			if(logger.active) logger.send({label:"compare sent images"});
+			node.sizeImage(msg,msg.payload.image1,(msg,image1)=>{
+				msg.payload.image1=image1;
+				node.sizeImage(msg,msg.payload.image2,(msg,image2)=>{
+					msg.payload.image2=image2;
+	            	node.sendCompare(msg);
+				});
+			});
         });
        	node.releaseStaleImagesProcess = setInterval(function(node) {node.releaseStaleImages.apply(node)}, 1000*(node.checkStakeFrequencySecs||60),node);
        	node.on("close", function(removed,done) {

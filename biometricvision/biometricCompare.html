@@ -10,6 +10,9 @@
     <dt>clearCache</dt><dd>Clear the cache</dd>
     <dt>...</dt><dd>Compare payload.image1 to payload.image2</dd>
     </dl>
+    <p>
+    If action results in successfull compare then message set to match or mismatch. Otherwise OK or Error. 
+    </p>
 </script>
 
 <script type="text/x-red" data-template-name="Biometric Compare">
@@ -53,8 +56,8 @@
         },
 	    inputs:1,
         inputLabels: "Message",
-        outputs:3,
-        outputLabels: ["Match","MisMatch","Error"],
+        outputs:4,
+        outputLabels: ["Match","MisMatch","OK","Error"],
         icon: "logo.PNG",
         label: function() {
             return this.name||this._(biometricCompareNodeName);

@@ -1,0 +1,441 @@
+[
+    {
+        "id": "31152e8b.344d02",
+        "type": "tab",
+        "label": "biometricvision 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "6c1f26bd.ef6698",
+        "type": "file in",
+        "z": "31152e8b.344d02",
+        "name": "get image",
+        "filename": "",
+        "format": "",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "x": 280,
+        "y": 400,
+        "wires": [
+            [
+                "10eb08e9.815a67"
+            ]
+        ]
+    },
+    {
+        "id": "eac0fa93.9b5d48",
+        "type": "comment",
+        "z": "31152e8b.344d02",
+        "name": "http://vis-www.cs.umass.edu/lfw/lfw.tgz dir2files takes time as large (1k++) ",
+        "info": "",
+        "x": 380,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "b950fe0e.38815",
+        "type": "inject",
+        "z": "31152e8b.344d02",
+        "name": "",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 100,
+        "y": 200,
+        "wires": [
+            [
+                "f6cc60d4.92c8a"
+            ]
+        ]
+    },
+    {
+        "id": "f6cc60d4.92c8a",
+        "type": "dir2files",
+        "z": "31152e8b.344d02",
+        "name": "",
+        "dirname": "D:\\downloads\\lfw\\lfw",
+        "pathRegex": "",
+        "isRecursive": false,
+        "findDir": true,
+        "isArray": true,
+        "x": 280,
+        "y": 200,
+        "wires": [
+            [
+                "beca0f5.fa59ef"
+            ]
+        ]
+    },
+    {
+        "id": "da4c3251.bbde1",
+        "type": "dir2files",
+        "z": "31152e8b.344d02",
+        "name": "",
+        "dirname": "",
+        "pathRegex": "",
+        "isRecursive": false,
+        "findDir": false,
+        "isArray": true,
+        "x": 620,
+        "y": 260,
+        "wires": [
+            [
+                "da979219.3653c"
+            ]
+        ]
+    },
+    {
+        "id": "fd913095.4c3b",
+        "type": "function",
+        "z": "31152e8b.344d02",
+        "name": "set image 1",
+        "func": "msg.images=msg.payload;\nmsg.filename=msg.images[0];\nreturn msg;",
+        "outputs": 2,
+        "noerr": 0,
+        "x": 110,
+        "y": 400,
+        "wires": [
+            [
+                "6c1f26bd.ef6698"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "10eb08e9.815a67",
+        "type": "function",
+        "z": "31152e8b.344d02",
+        "name": "store image 1 set image 2",
+        "func": "msg.image1=msg.payload;\nmsg.filename=msg.images[1];\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 150,
+        "y": 460,
+        "wires": [
+            [
+                "eee2760f.4321a8"
+            ]
+        ]
+    },
+    {
+        "id": "c8d48da2.606c1",
+        "type": "debug",
+        "z": "31152e8b.344d02",
+        "name": "dump",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 530,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "eee2760f.4321a8",
+        "type": "file in",
+        "z": "31152e8b.344d02",
+        "name": "get image2",
+        "filename": "",
+        "format": "",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "x": 390,
+        "y": 460,
+        "wires": [
+            [
+                "137dd267.0ae9ee"
+            ]
+        ]
+    },
+    {
+        "id": "86a4a565.34ec68",
+        "type": "debug",
+        "z": "31152e8b.344d02",
+        "name": "error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 330,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "ea32d3ad.49b14",
+        "type": "Monitor Flow",
+        "z": "31152e8b.344d02",
+        "name": "unmatched",
+        "x": 390,
+        "y": 580,
+        "wires": [
+            [
+                "6e43aa49.810c74"
+            ]
+        ]
+    },
+    {
+        "id": "b5348093.da939",
+        "type": "Monitor Flow",
+        "z": "31152e8b.344d02",
+        "name": "Finish person",
+        "x": 740,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "ea13c9d.6deca38",
+        "type": "function",
+        "z": "31152e8b.344d02",
+        "name": "set person",
+        "func": "msg.dirname=msg.payload[0]\ntry{\n    msg.person=msg.filename.split(\"\\\\\").pop();\n} catch(ex) {\n    msg.person=msg.filename\n}\nmsg.topic=msg.person;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 390,
+        "y": 260,
+        "wires": [
+            [
+                "da4c3251.bbde1"
+            ]
+        ]
+    },
+    {
+        "id": "242e9b97.4609a4",
+        "type": "inject",
+        "z": "31152e8b.344d02",
+        "name": "stats",
+        "topic": "@stats",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 510,
+        "y": 640,
+        "wires": [
+            [
+                "6e43aa49.810c74"
+            ]
+        ]
+    },
+    {
+        "id": "860aa743.7b9b28",
+        "type": "debug",
+        "z": "31152e8b.344d02",
+        "name": "stats",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 750,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "f2ebcea3.c1717",
+        "type": "Biometric Compare",
+        "z": "31152e8b.344d02",
+        "name": "",
+        "directoryStore": "d:\\temp\\images",
+        "x": 130,
+        "y": 600,
+        "wires": [
+            [
+                "2979a5f5.b60efa"
+            ],
+            [
+                "ea32d3ad.49b14"
+            ],
+            [],
+            [
+                "86a4a565.34ec68"
+            ]
+        ]
+    },
+    {
+        "id": "6e43aa49.810c74",
+        "type": "Data Analysis",
+        "z": "31152e8b.344d02",
+        "name": "metrics",
+        "action": "realtime",
+        "term": "1111",
+        "keyProperty": "\"unmatched\"",
+        "dataProperty": "msg.requestTS.elapse",
+        "dataProperties": [
+            "msg.payload[0]",
+            "msg.payload[1]"
+        ],
+        "x": 700,
+        "y": 440,
+        "wires": [
+            [
+                "869affd8.a417b"
+            ],
+            [
+                "860aa743.7b9b28"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "2979a5f5.b60efa",
+        "type": "Monitor Flow",
+        "z": "31152e8b.344d02",
+        "name": "match",
+        "x": 350,
+        "y": 520,
+        "wires": [
+            [
+                "6e43aa49.810c74"
+            ]
+        ]
+    },
+    {
+        "id": "beca0f5.fa59ef",
+        "type": "Array Permutations",
+        "z": "31152e8b.344d02",
+        "name": "perms of directories",
+        "action": "Messages",
+        "arrayProperty": "msg.payload",
+        "setSize": "1",
+        "unique": "true",
+        "outputs": 1,
+        "x": 470,
+        "y": 200,
+        "wires": [
+            [
+                "13b73cd0.d0abe3"
+            ]
+        ]
+    },
+    {
+        "id": "869affd8.a417b",
+        "type": "Array Permutations",
+        "z": "31152e8b.344d02",
+        "name": "pairs",
+        "action": "Loop",
+        "arrayProperty": "msg.payload",
+        "setSize": 2,
+        "unique": "true",
+        "outputs": 2,
+        "x": 310,
+        "y": 320,
+        "wires": [
+            [
+                "78936731.806878"
+            ],
+            [
+                "fd913095.4c3b",
+                "c8d48da2.606c1"
+            ]
+        ]
+    },
+    {
+        "id": "da979219.3653c",
+        "type": "Monitor Flow",
+        "z": "31152e8b.344d02",
+        "name": "",
+        "x": 130,
+        "y": 320,
+        "wires": [
+            [
+                "869affd8.a417b"
+            ]
+        ]
+    },
+    {
+        "id": "137dd267.0ae9ee",
+        "type": "Monitor Flow",
+        "z": "31152e8b.344d02",
+        "name": "",
+        "x": 110,
+        "y": 520,
+        "wires": [
+            [
+                "f2ebcea3.c1717"
+            ]
+        ]
+    },
+    {
+        "id": "13b73cd0.d0abe3",
+        "type": "Queue",
+        "z": "31152e8b.344d02",
+        "name": "person",
+        "maxActive": 10,
+        "maxWaiting": "10000",
+        "maxTime": "6000000",
+        "maxRetries": 0,
+        "queueManager": "42c37303.fc110c",
+        "x": 110,
+        "y": 260,
+        "wires": [
+            [
+                "ea13c9d.6deca38",
+                "c8d48da2.606c1"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "78936731.806878",
+        "type": "Queue Checkpoint",
+        "z": "31152e8b.344d02",
+        "name": "person finished",
+        "queueManager": "42c37303.fc110c",
+        "x": 520,
+        "y": 320,
+        "wires": [
+            [
+                "b5348093.da939"
+            ]
+        ]
+    },
+    {
+        "id": "dcf979a0.4fdd08",
+        "type": "inject",
+        "z": "31152e8b.344d02",
+        "name": "",
+        "topic": "",
+        "payload": "[\"a\",\"b\"]",
+        "payloadType": "json",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "x": 110,
+        "y": 60,
+        "wires": [
+            [
+                "beca0f5.fa59ef"
+            ]
+        ]
+    },
+    {
+        "id": "42c37303.fc110c",
+        "type": "Queue Manager",
+        "z": "",
+        "name": "test",
+        "checkInterval": "10000",
+        "maxActive": "100",
+        "maxWaiting": "100000",
+        "maxTime": "6000000",
+        "setqueues": {},
+        "setcheckpoints": {},
+        "setrollbacks": {}
+    }
+]
