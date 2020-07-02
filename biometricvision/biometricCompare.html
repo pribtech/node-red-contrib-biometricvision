@@ -1,75 +1,65 @@
 <script type="text/x-red" data-help-name="Biometric Compare">
-    <p>Face Compare with response on match or unmatch. </p>
-    <p>See <a href="https://biometricvision.com">biometricvision.com</a> for user, password and X-Token.</p>
-    <p>Detail store directory if the image is to persisted with save</p>
-    <h1>Topic</h1>
-    <dl>
-    <dt>cache/&lt;identifier&gt;</dt><dd>Put image in payload into cache</dd>
-    <dt>compare/&lt;identifier&gt;</dt><dd>Compare image payload with image associated with identifer</dd>
-    <dt>save/&lt;identifier&gt;</dt><dd>Put image in payload into cache and persist file system</dd>
-    <dt>clearCache</dt><dd>Clear the cache</dd>
-    <dt>...</dt><dd>Compare payload.image1 to payload.image2</dd>
-    </dl>
-    <p>
-    If action results in successfull compare then message set to match or mismatch. Otherwise OK or Error. 
-    </p>
+	<p>Face Compare with response on match or unmatch. </p>
+	<p>See <a href="https://biometricvision.com">biometricvision.com</a> for user, password and X-Token.</p>
+	<p>Detail store directory if the image is to persisted with save</p>
+	<h1>Topic</h1>
+	<dl>
+	<dt>cache/&lt;identifier&gt;</dt><dd>Put image in payload into cache</dd>
+	<dt>compare/&lt;identifier&gt;</dt><dd>Compare image payload with image associated with identifer</dd>
+	<dt>save/&lt;identifier&gt;</dt><dd>Put image in payload into cache and persist file system</dd>
+	<dt>clearCache</dt><dd>Clear the cache</dd>
+	<dt>...</dt><dd>Compare payload.image1 to payload.image2</dd>
+	</dl>
+	<p>
+	If action results in successfull compare then message set to match or mismatch. Otherwise OK or Error. 
+	</p>
 </script>
 
 <script type="text/x-red" data-template-name="Biometric Compare">
 
-    <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> Name </label>
-        <input type="text" id="node-input-name" placeholder="Name">
-    </div>
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name </label>
+		<input type="text" id="node-input-name" placeholder="Name">
+	</div>
 
-    <div class="form-row">
-        <label for="node-input-user"><i class="icon-bookmark"></i> User</label>
-        <input type="text" id="node-input-user">
-    </div>
-    <div class="form-row">
-		<label for="node-input-password"><i class="icon-bookmark"></i> Password</label>
-		<input type="password" id="node-input-password">
-    </div>
-    <div class="form-row">
-        <label for="node-input-xtoken"><i class="icon-bookmark"></i> X-Token</label>
-        <input type="text" id="node-input-xtoken">
-    </div>
-    <div class="form-row">
-        <label for="node-input-directoryStore"><i class="icon-bookmark"></i>Store directory</label>
-       <input type="text" id="node-input-directoryStore">
-    </div>
+	<div class="form-row">
+		<label for="node-input-token"><i class="icon-bookmark"></i> Token</label>
+		<input type="text" id="node-input-token">
+	</div>
+	<div class="form-row">
+		<label for="node-input-directoryStore"><i class="icon-bookmark"></i>Store directory</label>
+	   <input type="text" id="node-input-directoryStore">
+	</div>
 
 </script>
 
 <script type="text/javascript">
   	const biometricCompareNodeName="Biometric Compare";
-    RED.nodes.registerType(biometricCompareNodeName,{
-    	category: 'function',
-        defaults: {
-            name: {value:"",required:false},
-            directoryStore: {value:"",required:false}
-        },
-        credentials: {
-            user: {type:'text'},
-            password: {type:'password'},
-            xtoken: {type:'text'}
-        },
-	    inputs:1,
-        inputLabels: "Message",
-        outputs:4,
-        outputLabels: ["Match","MisMatch","OK","Error"],
-        icon: "logo.PNG",
-        label: function() {
-            return this.name||this._(biometricCompareNodeName);
-        },
-        labelStyle: function() {
-            return "node_label_italic";
-        },
-        oneditprepare: function() {
-        },
-        oneditsave: function() {
-        },
-        oneditresize: function(size) {
-        },
-    });
+	RED.nodes.registerType(biometricCompareNodeName,{
+		category: 'function',
+		defaults: {
+			name: {value:"",required:false},
+			directoryStore: {value:"",required:false}
+		},
+		credentials: {
+			token: {type:'text'}
+		},
+		inputs:1,
+		inputLabels: "Message",
+		outputs:4,
+		outputLabels: ["Match","MisMatch","OK","Error"],
+		icon: "logo.PNG",
+		label: function() {
+			return this.name||this._(biometricCompareNodeName);
+		},
+		labelStyle: function() {
+			return "node_label_italic";
+		},
+		oneditprepare: function() {
+		},
+		oneditsave: function() {
+		},
+		oneditresize: function(size) {
+		},
+	});
 </script>
