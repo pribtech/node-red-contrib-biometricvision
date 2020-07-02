@@ -38,7 +38,7 @@ from [github repro][2]
 
 # Version
 
-0.0.1 base
+0.0.2 initial release
 
 # Author
 

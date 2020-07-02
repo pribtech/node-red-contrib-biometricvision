@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-biometricvision",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Node-RED biometricvision",
   "dependencies": {
     "jimp": "*",
@@ -44,7 +44,7 @@
   "author": "Peter Prib",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/peterprib/node-red-contrib-biometricvision/issues"
+    "url": "https://github.com/pribtech/node-red-contrib-biometricvision/issues"
   },
-  "homepage": "https://github.com/peterprib/node-red-contrib-biometricvision#readme"
+  "homepage": "https://github.com/pribtech/node-red-contrib-biometricvision#readme"
 }
