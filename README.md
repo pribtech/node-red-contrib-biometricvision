@@ -9,7 +9,7 @@ Features:
 *	Reduce max size for performance
 *   Save and cache reference image for performance and 
  
-![Test Flow](documentation/testflows.JPG "Test Flow")
+![Test Flow](documentation/testflows.jpg "Test Flow")
 
 ------------------------------------------------------------
 
