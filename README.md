@@ -2,6 +2,15 @@
 
 [Node Red][1] node for determining if a person matches between two digital images returning probability factors on key metric using api's from [Biometric Vision][4].
 
+Features:
+
+
+*   Auto resize if image payload size too large
+*	Reduce max size for performance
+*   Save and cache reference image for performance and 
+ 
+![Test Flow](documentation/testflows.JPG "Test Flow")
+
 ------------------------------------------------------------
 
 ## face compare
@@ -12,13 +21,13 @@ Token is obtained from [Biometric Vision][4] site.  Has free usage for small amo
 
 Topics can be set to control
 
-** Cache/<identifier> ** Put image in payload into cache
+Cache/< identifier >	Put image in payload into cache
 
-** compare/<identifier> ** Compare image payload with image associated with identifier
+compare/< identifier > 	Compare image payload with image associated with identifier
 
-** save/<identifier> ** Put image in payload into cache and persist file system
+save/< identifier > 	Put image in payload into cache and persist file system
 
-** clearCache ** Clear the cache
+clearCache Clear the cache
 
 otherwise compares payload.image1 to payload.image2
 
@@ -37,6 +46,8 @@ from [github repro][2]
 ------------------------------------------------------------
 
 # Version
+
+0.0.3 change from request to http.  Fix bug in sending to unmatch port and add match flag.
 
 0.0.2 initial release
 

@@ -1,18 +1,11 @@
 const logger = new (require("node-red-contrib-logger"))("Biometric Compare");
 logger.sendInfo("Copyright 2020 Jaroslav Peter Prib");
-/*
-commented code is to auto get new token if expired.
-api changes made it redundant but may be re-applied when bew version of api's is enhanced
 
-Logic for http is being constructed and not active
-*/
-
-const useHTTPS=false,
+const useHTTPS=true,  // set to false to request 
 	hostURL='https://biometricvisionapi.com',
 	compareAPI='/v1/compare',
 	compareURL=hostURL+compareAPI,
 	Jimp=require('jimp'),
-	maxImageSize=1000000,
 	https=require("https"),
 	request=require('request'),
 	Readable=require('stream').Readable,
@@ -268,32 +261,15 @@ function sendCompareHTTP(msg) {
 		if(!(image2 instanceof Buffer)) throw Error("image2 is not a buffer stream");
 
 		if(logger.active) logger.send({label:"image type",image1:objectType(image1),image2:objectType(image2)})
-//		let form = {
-//			image1:image2Stream('image1.jpg',image1),	
-//			image2:image2Stream('image1.jpg',image2)	
-//		};
 		const formData=new FormData();
 		formData.append('image1',image1,{filename:'image1'});				 
 		formData.append('image2',image2,{filename:'image2'});				 
 
-//		const options=optionsCompare;
-//		Object.assign(options.headers,node.headers,formData.getHeaders());
 		msg.requestTS={before:new Date()};
 		const options={method:"POST",
 			headers: Object.assign({"X-Authentication-Token": node.credentials.token},formData.getHeaders())
 		};
-//		const options=Object.assign({},node.options,formData.getHeaders());
 		if(logger.active) logger.send({label:"compare https.request",options:options});
-/*
-const requestCompare=https.request({
-    host: 'localhost',
-    port: '5000',
-    path: '/upload',
-    method: 'POST',
-    headers: form.getHeaders(),
-  },
-  response => {
-*/		
 		const requestCompare=https.request(compareURL,options, response=>{
 			if(logger.active) logger.send({label:"compare http callback",statusCode:response.statusCode,statusMessage:response.statusMessage,headers:response.headers});
 			const {statusCode}=response;
@@ -309,24 +285,31 @@ const requestCompare=https.request({
 			response.on('data', chunk=>rawData+=chunk);
 			response.on('end', ()=>{
 				try{
-					if(logger.active) logger.send({label:"compare response end",response:rawData});
-					const body=JSON.parse(rawData);
 					msg.requestTS.after=new Date();
 					msg.requestTS.elapse=msg.requestTS.after-msg.requestTS.before;
+					if(logger.active) logger.send({label:"compare response end",response:rawData});
+					const body=JSON.parse(rawData);
+					body.match=(body.confidence=="Match");
 					msg.payload=body;
-					node.send(msg);
+					if(body.match) node.send(msg)
+					else node.send([null,msg]);
+					if(!node.stateOK) {
+						node.stateOK=true;
+						node.status({fill:"green",shape:"ring",text:"processed compares"});
+					}
 				} catch(ex) {
+					logger.sendError({label:"compare http response",error:ex.message});
+					node.sendError(msg,error);
+					node.error(error);
 				}
 			});
-//see pipe	response.write(formData);
-//			response.end();
 		}).on('error', error=>{
-			logger.sendError({label:"request compare",error:error});
+			logger.sendError({label:"compare http on error compare",error:error});
 			node.sendError(msg,error);
 			node.error(error);
 		}).on('timeout',function(){
 			const error="timeout";
-			logger.sendError({label:"request compare",error:error});
+			logger.sendError({label:"compare http on timeout compare",error:error});
 			node.sendError(msg,error);
 			node.error(error);
 		});
@@ -393,7 +376,11 @@ function sendCompareRequest(msg) {
 				checkStatus(response.statusCode);
 				const body=response.body;
 				if(body.status && body.status=="error") throw Error(body.message);
+				body.match=(body.confidence=="Match");
 				msg.payload=body;
+				msg.payload=body;
+				if(body.match) node.send(msg)
+				else node.send([null,msg]);
 			} catch(ex){
 				try{
 /*					if(response.statusCode && response.statusCode == 401) {
@@ -417,8 +404,12 @@ function sendCompareRequest(msg) {
 				}
 				return;
 			}
-			if(msg.biometricvisionConnectTried) delete msg.biometricvisionConnectTried;
-			node.send(msg.payload?msg:[null,msg]);
+//			if(msg.biometricvisionConnectTried) delete msg.biometricvisionConnectTried;
+			node.send(msg.payload.match?msg:[null,msg]);
+			if(!node.stateOK) {
+				node.stateOK=true;
+				node.status({fill:"green",shape:"ring",text:"processed compares"});
+			}
 		});
 	} catch(ex) {
 		logger.send({label:"sendCompare request error",error:ex.message,stack:ex.stack});
@@ -430,14 +421,13 @@ function sendCompareRequest(msg) {
 module.exports = function(RED) {
 	function biometricCompareNode(config) {
 		RED.nodes.createNode(this, config);
-		const node=Object.assign(this,config,{checkStakeFrequencySecs:60,imageCache:{},imageCacheRetentionSecs:3600});
+		const node=Object.assign(this,{maxSize:10000000},config,{checkStakeFrequencySecs:60,imageCache:{},imageCacheRetentionSecs:3600});
 //		let node=Object.assign(this,config,{checkStakeFrequencySecs:60,imageCache:{},imageCacheRetentionSecs:3600,waitOnToken:[],tokenOK:false});
 		node.imageCache={};
 		node.saveImage=(()=>false);
 		if(node.directoryStore){
 			node.fs=require('fs'),
-			node.path=require('path'),
-			//const	{Readable}=require('stream');
+			node.path=require('path');
 			node.fs.stat(node.directoryStore, function(err, stats) {
 				try{
 					if(err) throw Error(err);
@@ -504,7 +494,7 @@ module.exports = function(RED) {
 				node.send([null,null,null,msg]); 
 		};
 		node.sizeImage=function(msg,imageBuffer,callBack){
-			const factor=maxImageSize/imageBuffer.length;
+			const factor=node.maxSize/imageBuffer.length;
 			if(factor>1){
 				callBack(msg,imageBuffer);
 				return;
@@ -598,7 +588,7 @@ module.exports = function(RED) {
 		node.releaseStaleImagesProcess = setInterval((node)=>node.releaseStaleImages(node), 1000*(node.checkStakeFrequencySecs||60),node);
 		node.on("close", function(removed,done) {
 			clearInterval(node.releaseStaleImagesProcess); 
-			node.connectionPool.close(done);
+			done();
 		});
 	} 
 

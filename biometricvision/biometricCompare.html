@@ -21,7 +21,6 @@
 		<label for="node-input-name"><i class="fa fa-tag"></i> Name </label>
 		<input type="text" id="node-input-name" placeholder="Name">
 	</div>
-
 	<div class="form-row">
 		<label for="node-input-token"><i class="icon-bookmark"></i> Token</label>
 		<input type="text" id="node-input-token">
@@ -29,6 +28,10 @@
 	<div class="form-row">
 		<label for="node-input-directoryStore"><i class="icon-bookmark"></i>Store directory</label>
 	   <input type="text" id="node-input-directoryStore">
+	</div>
+	<div class="form-row">
+		<label for="node-input-maxSize"><i class="icon-bookmark"></i>Max size</label>
+		<input type="number" id="node-input-maxSize" min=40000 max=10000000 step=10000>
 	</div>
 
 </script>
@@ -39,6 +42,7 @@
 		category: 'function',
 		defaults: {
 			name: {value:"",required:false},
+			maxSize: {value:10000000,required:false},
 			directoryStore: {value:"",required:false}
 		},
 		credentials: {
