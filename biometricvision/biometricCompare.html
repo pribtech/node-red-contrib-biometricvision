@@ -1,6 +1,6 @@
 <script type="text/x-red" data-help-name="Biometric Compare">
 	<p>Face Compare with response on match or unmatch. </p>
-	<p>See <a href="https://biometricvision.com">biometricvision.com</a> for user, password and X-Token.</p>
+	<p>See <a href="https://biometricvision.com?ref=nodered" target="_blank">biometricvision.com</a> for user, password and X-Token.</p>
 	<p>Detail store directory if the image is to persisted with save</p>
 	<h1>Topic</h1>
 	<dl>
@@ -24,6 +24,9 @@
 	<div class="form-row">
 		<label for="node-input-token"><i class="icon-bookmark"></i> Token</label>
 		<input type="text" id="node-input-token">
+	</div>
+	<div class="form-row">
+		<a>Get token from Biometric Vision <button onclick=" window.open('https://app.biometricvision.com?ref=nodered','_blank')">https://app.biometricvision.com</button></a>
 	</div>
 	<div class="form-row">
 		<label for="node-input-directoryStore"><i class="icon-bookmark"></i>Store directory</label>

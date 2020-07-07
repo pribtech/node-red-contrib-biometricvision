@@ -3,7 +3,7 @@ logger.sendInfo("Copyright 2020 Jaroslav Peter Prib");
 
 const useHTTPS=true,  // set to false to request 
 	hostURL='https://biometricvisionapi.com',
-	compareAPI='/v1/compare',
+	compareAPI='/v1/compare?ref=nodered',
 	compareURL=hostURL+compareAPI,
 	Jimp=require('jimp'),
 	https=require("https"),

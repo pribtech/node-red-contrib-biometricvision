@@ -4,10 +4,15 @@
 
 Features:
 
-
 *   Auto resize if image payload size too large
-*	Reduce max size for performance
-*   Save and cache reference image for performance and 
+*	Can reduce max size for performance to minimise latency
+*   Cache reference image for performance for repeated calls to reference image
+*   Save image for reference image so id reference image for check
+
+------------------------------------------------------------
+
+Below is the test flow that can be found showing the various features.
+Note, images need to be copied from the repro's test folder to required location and the fetch file node updated.
  
 ![Test Flow](documentation/testflows.jpg "Test Flow")
 
@@ -21,17 +26,23 @@ Token is obtained from [Biometric Vision][4] site.  Has free usage for small amo
 
 Topics can be set to control
 
-Cache/< identifier >	Put image in payload into cache
+cache/< identifier >	Put image in payload into cache
 
 compare/< identifier > 	Compare image payload with image associated with identifier
 
-save/< identifier > 	Put image in payload into cache and persist file system
+save/< identifier > 	Put image in payload into cache and persist in named file system directory
 
 clearCache Clear the cache
 
 otherwise compares payload.image1 to payload.image2
 
 ![Compare](documentation/compare.JPG "Compare")
+
+------------------------------------------------------------
+
+# Test
+
+To help with 
 
 ------------------------------------------------------------
 
@@ -47,9 +58,11 @@ from [github repro][2]
 
 # Version
 
-0.0.3 change from request to http.  Fix bug in sending to unmatch port and add match flag.
+0.0.4 Minor documentation fixes.
 
-0.0.2 initial release
+0.0.3 Change from request to http.  Fix bug in sending to unmatched port and add match flag.
+
+0.0.2 Initial release
 
 # Author
 
