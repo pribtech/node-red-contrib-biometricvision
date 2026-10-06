@@ -19,6 +19,9 @@
     "node-red": "*",
     "node-red-node-test-helper": "*"
   },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "test": "mocha \"test/**/*_spec.js\"",
     "lint": "eslint --ext .js ./",
